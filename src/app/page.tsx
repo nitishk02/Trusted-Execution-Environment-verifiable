@@ -1,5 +1,6 @@
 // src/app/page.tsx
 "use client";
+import "@rainbow-me/rainbowkit/styles.css";
 import Image from "next/image";
 import styles from "./page.module.css";
 import React, { useEffect, useState } from 'react';
@@ -55,7 +56,9 @@ async function uploadUint8Array(data: Uint8Array) {
 
 export default function Home() {
   const [result, setResult] = useState<string | null>(null);
-  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(true);
+  const [certifacte, setCertifacte] = useState<any>()
+  const [res, setRes] = useState<any>()
 
 
   // Define the function to be called on button click
@@ -100,8 +103,12 @@ export default function Home() {
   useEffect(() => {
     async function verifyFrontend() {
         try {
-            const response = await axios.post('/api/verify', { hashes });
-            const r = response?.data?.verificationResult?.success;
+          const frontendHash = JSON.stringify(hashes?.BUILD_ID);
+            const response = await axios.post('/api/verify', { frontendHash });
+            console.log(response);
+            setRes(response.data);
+            setCertifacte(response.data.certificateChain);
+            const r = response?.data?.verificationResult;
             setVerificationStatus(r);
         } catch (error) {
             setVerificationStatus(false);
@@ -118,50 +125,68 @@ export default function Home() {
 console.log(verificationStatus);
 
   return (
-    <div className={styles.page}>
-      {/* <main className={styles.main}>
-        <ol>
-          <li>
-            Generate a Remote Attestation.
-          </li>
-          <li>Get TEE Account.</li>
-          <li>Test Signing Capabilities.</li>
-        </ol>
-        <div className={styles.ctas}>
-          <a className={styles.primary} target="_blank"
-             rel="noopener noreferrer" onClick={() => handleClick('/api/remoteAttestation')}>
-            Remote Attestation
-          </a>
-          <a className={styles.primary} target="_blank"
-             rel="noopener noreferrer" onClick={() => handleClick('/api/account/address')}>
-            TEE Account
-          </a>
-        </div>
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <main className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
+      <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
+        TEE Verifiable Frontend
+      </h1>
 
-        <div className={styles.ctas}>
-          <a className={styles.secondary} target="_blank"
-             rel="noopener noreferrer" onClick={() => handleClick('/api/signMessage')}>
-            Sign Message
-          </a>
-          <a className={styles.secondary} target="_blank"
-             rel="noopener noreferrer" onClick={() => handleClick('/api/signTypedData')}>
-            Sign Typed Data
-          </a>
-          <a className={styles.secondary} target="_blank"
-             rel="noopener noreferrer" onClick={() => handleClick('/api/signTransaction')}>
-            Sign Transaction
-          </a>
-        </div>
-        <h1>TEE Verifiable Frontend</h1>
-        <p>Verification Status: {verificationStatus?"success":"failed"}</p>
-      </main> */}
-      
+      <p className="text-center text-lg font-medium">
+        Verification Status:{" "}
+        <span className={`font-semibold ${verificationStatus ? "text-green-600" : "text-red-600"}`}>
+          {verificationStatus ? "Success" : "Failed"}
+        </span>
+      </p>
 
+      <ol className="list-decimal list-inside text-gray-600 mt-4">
+        <li>Generate a Remote Attestation.</li>
+        <li>Get TEE Account.</li>
+        <li>Test Signing Capabilities.</li>
+      </ol>
 
-      <div className={styles.resultBox}>
-        <h3>Result:</h3>
-        <pre>{result}</pre>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <button
+          onClick={() => handleClick("/api/remoteAttestation")}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          Remote Attestation
+        </button>
+        <button
+          onClick={() => handleClick("/api/account/address")}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          TEE Account
+        </button>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <button
+          onClick={() => handleClick("/api/signMessage")}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          Sign Message
+        </button>
+        <button
+          onClick={() => handleClick("/api/signTypedData")}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          Sign Typed Data
+        </button>
+        <button
+          onClick={() => handleClick("/api/signTransaction")}
+          className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow"
+        >
+          Sign Transaction
+        </button>
+      </div>
+
+      <div className="bg-gray-50 border-t border-gray-200 mt-8 p-4 rounded">
+        <h3 className="text-lg font-medium text-gray-800 mb-2">Result:</h3>
+        <pre className="bg-gray-100 p-4 rounded overflow-x-auto text-sm text-gray-700">{result}</pre>
+        <pre className="bg-gray-100 p-4 rounded overflow-x-auto text-sm text-gray-700">{certifacte}</pre>
+        <pre className="bg-gray-100 p-4 rounded overflow-x-auto text-sm text-gray-700">{res?.quote}</pre>
+      </div>
+    </main>
+  </div>
   );
 }

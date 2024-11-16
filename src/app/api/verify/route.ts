@@ -5,28 +5,24 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
     const { hashes } = await request.json();
-    function areJsonEqual(json1: any, json2: any): boolean {
-        return JSON.stringify(json1) === JSON.stringify(json2);
-    }
     try {
+        const endpoint = process.env.DSTACK_SIMULATOR_ENDPOINT || 'http://localhost:8090'
 
-        // Check if the input hash exists in the storedHashes
-        const verifyHash = (hash: any) => {
-            if (areJsonEqual(storedHashes, hash)) {
-                return {
-                    success: true,
-                    message: `Hash verified successfully`,
-                };
-            } else {
-                return {
-                    success: false,
-                    message: `Hash mismatch! Provided hash: ${hash}`,
-                };
-            }
-        };
+        const client = new TappdClient(endpoint)
+        // Step 1: Derive a key specific to the frontend build hash
+        const keyResponse = await client.deriveKey('/frontend/keys', hashes);
 
-        const verificationResult = verifyHash(hashes);
-        return Response.json({ verificationResult });
+        // Step 2: Generate a TDX quote with the derived key's hash as report data
+        const reportData = keyResponse.key; // Using the derived key as report data
+        const quoteResponse = await client.tdxQuote(reportData);
+
+        return Response.json({
+            verificationResult: true,
+            derivedKey: keyResponse.key,
+            certificateChain: keyResponse.certificate_chain,
+            quote: quoteResponse.quote,
+            eventLog: quoteResponse.event_log,
+        });
     } catch (error) {
         return Response.json({ error: 'Verification failed' });
     }
